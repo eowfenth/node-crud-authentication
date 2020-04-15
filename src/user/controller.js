@@ -40,7 +40,7 @@ const remove = async (req, res) => {
 
 const update = async (req, res) => {
     const id = req.params.id;
-    const { name, username, email, password } = req.body;
+    const { name, username, email, password, password_hash } = req.body;
 
     if (!name || !username || !email || !password) {
         return res.json({
@@ -51,18 +51,26 @@ const update = async (req, res) => {
 
     const users = await getData();
 
-    const user_id = user.findIndex(usr => usr.id === id);
-    users[user_id] = {
-        ...users[user_id],
-        name,
-        username,
-        email,
-        password,
-    };
+    const user_id = users.findIndex(usr => usr.id === id);
+    
+    if (user_id) {
+        users[user_id] = {
+            ...users[user_id],
+            name,
+            username,
+            email,
+            password: password_hash,
+        };
+    
+        await write([...users]);
+    
+        return res.json({ name, username, email });
+    }
 
-    await write([...users]);
-
-    return res.json({ name, username, email });
+    return res.json({
+        error: 404,
+        message: 'Not Found',
+    });
 };
 
 const get = async (req, res) => {

@@ -3,7 +3,6 @@ const { secret } = require("./config");
 
 const checkAuthorization = (req, res, next) => {
     const authorization = req.headers.authorization;
-
     if (authorization) {
         const [bearer, token] = authorization.split(" ");
         console.log(token);
