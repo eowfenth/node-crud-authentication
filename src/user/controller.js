@@ -1,5 +1,6 @@
 const { getData, write } = require("../db");
 const { v4: uuid } = require("uuid");
+const User = require("./model");
 
 const create = async (req, res) => {
     const { name, username, email, password_hash } = req.body;
@@ -76,15 +77,14 @@ const update = async (req, res) => {
 const get = async (req, res) => {
     const id = req.params.id;
 
-    const users = await getData();
-    const user = users.find(usr => usr.id === id);
+    const response = await User.getOne(id);
 
-    if (user) {
-        const { id, name, username, email } = user;
+    if (response.length) {
+        const { id, name, username, email } = response[0];
         return res.json({ id, name, username, email });
     }
 
-    res.status(404).json({
+    return res.status(404).json({
         error: 404,
         message: "Not Found",
     });
