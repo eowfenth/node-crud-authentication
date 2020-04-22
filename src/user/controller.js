@@ -8,35 +8,40 @@ const create = async (req, res) => {
     const user = { 
         name,
         username,
-        email,
-        id: uuid(),
+        email
     };
 
-    const data = await getData();
+    const response = await User.insertOne({ ...user, password_hash });
 
-    const alreadyExists = data.find(usr => usr.email === email);
-    if (alreadyExists) {
+    if (!response.length || response.error) {
+        if (response.error === 409) {
+            return res.json(response);
+        }
+
         return res.json({
-            error: 409,
-            message: "Conflict",
+            error: 503,
+            message: 'Internal Error'
         });
     }
 
-    await write([...data, { ...user, password: password_hash }]);
-
-    return res.json(user);
+    return res.json({ ...user, id: response[0].id });
 };
 
 const remove = async (req, res) => {
     const id = req.params.id;
 
-    let users = await getData();
+    const response = await User.deleteOne(id);
 
-    users = users.filter((user) => user.id !== id);
+    if (response.length) {
+        res.json({
+            data: response[0],
+        });
+    }
 
-    await write([...users]);
-
-    return res.send();
+    return res.json({
+        error: 503,
+        message: 'Internal Error',
+    });
 };
 
 const update = async (req, res) => {
@@ -91,8 +96,11 @@ const get = async (req, res) => {
 };
 
 const getAll = async (req, res) => {
-    const users = await getData();
-    return res.json(users.map(({ password, ...rest}) => rest));
+    const { is_deleted = false } = req.query;
+
+    const response = await User.getAll(undefined, undefined, { is_deleted });
+
+    return res.json(response.map(({ password_hash, is_deleted, ...rest}) => rest));
 };
 
 module.exports = { create, remove, update, get, getAll };
